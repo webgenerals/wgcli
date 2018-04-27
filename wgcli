@@ -80,11 +80,11 @@ def translateAction(buildTool, action) {
 def translateBuildnumberArgument(buildTool, options) {
 	def buildnumberArgument = ''
 	if (options.buildnumber) {
-		buildnumberArgument = " -Dbuildnumber=${options.buildnumber}"
+		buildnumberArgument = " -Dbuildnumber=-${options.buildnumber}"
 	} else {
 		def gocdPipelineCounter = System.getenv('GO_PIPELINE_COUNTER')
 		if (gocdPipelineCounter) {
-			buildnumberArgument = " -Dbuildnumber=${gocdPipelineCounter}"
+			buildnumberArgument = " -Dbuildnumber=-${gocdPipelineCounter}"
 		}
 	}
 
