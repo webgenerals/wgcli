@@ -1,0 +1,129 @@
+#!/usr/bin/env groovy
+
+def printVersion() {
+	println 'wgcli 1.0.0'
+}
+
+def printUsage() {
+	println getUsage()
+}
+
+def getUsage() {
+	return """
+	wgcli [action] [options]
+
+	ACTIONS
+
+	build-jar              build the project
+	create-docker-image    create the docker image
+	deploy-jar             upload the project jars to the repository
+	deploy-docker-image    upload the project docker image to the registry
+
+	OPTIONS
+
+	-r --release           build the release version						
+	-s --snapshot          build the snapshot version (default)
+	-v --version           Version information
+	-h --help              Print help
+	"""
+}
+
+def parseCliOptions(args) {
+	def cli = new CliBuilder(usage: getUsage())
+
+	cli.with {
+		r longOpt: 'release', 'Build release version'
+		s longOpt: 'snapshot', 'Build snapshot version'
+		v longOpt: 'version', 'The version of this script'
+		h longOpt: 'help', 'The help of this script'
+		_ longOpt: 'changelist', args: 1, 'Build snapshot version'
+		_ longOpt: 'buildnumber', args: 1, 'Build number'
+	}
+
+	def options = cli.parse(this.args)
+
+	if(!options) {
+		println 'Options could not be read'
+		println cli.usage
+		return
+	}
+
+	return options;
+}
+
+def isMaven(buildTool) {
+	return buildTool == 'maven';
+}
+
+def translateAction(buildTool, action) {
+
+	if (isMaven(buildTool)) {
+		if (action == 'build-jar') {
+			return " clean install -DskipTests"
+		} else if (action == 'create-docker-image') {
+			return " dockerfile:build"
+		} else if (action == 'deploy-jar') {
+			return " deploy"
+		} else if (action == 'deploy-docker-image') {
+			return " dockerfile:push"
+		} else {
+			println "Invalid action: ${action}"
+			printUsage()
+			System.exit(0)
+		}
+	} else {
+		println 'Only maven is supported for the moment'
+		System.exit(0)
+	}
+}
+
+def translateBuildnumberArgument(buildTool, options) {
+	def buildnumberArgument = ''
+	if (options.buildnumber) {
+		buildnumberArgument = " -Dbuildnumber=${options.buildnumber}"
+	} else {
+		def gocdPipelineCounter = System.getenv('GO_PIPELINE_COUNTER')
+		if (gocdPipelineCounter) {
+			buildnumberArgument = " -Dbuildnumber=${gocdPipelineCounter}"
+		}
+	}
+
+	return buildnumberArgument
+}
+
+def translateSnapshotOrReleaseArguments(buildTool, options) {	
+	def releaseFlagIsPresent = options.r || options.release;
+
+	if (releaseFlagIsPresent) {
+		return '';
+	} else {
+		def buildnumberArgument = translateBuildnumberArgument(buildTool, options);
+		return " -Dchangelist=-SNAPSHOT ${buildnumberArgument}";
+	} 
+}
+
+def runWGCli(args) {
+	
+	def options = parseCliOptions(args)
+
+	if (args.length == 1 && (options.v || options.version)) {
+		printVersion()
+	} else if (args.length == 1 && (options.h || options.help)) {
+		printUsage()
+	} else {
+		def action = args[0]
+
+		def buildTool = 'maven';
+		def jobCommand = 'mvn';
+
+		jobCommand += translateAction(buildTool, action)
+		jobCommand += translateSnapshotOrReleaseArguments(buildTool, options)
+
+		println "Executing the following command: ${jobCommand}"
+		def proc = jobCommand.execute()
+		proc.consumeProcessOutput(System.out, System.err)
+	}
+	
+}
+
+runWGCli(this.args);
