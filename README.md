@@ -1,6 +1,13 @@
 # wgcli
 A CLI Tool to perform different development tasks more easily
 
+# Installation
+
+```
+$ git clone https://github.com/webgenerals/wgcli.git
+$ chmod +x install.sh
+$ sudo ./install.sh
+```
 # Usage
 
 ```
