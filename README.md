@@ -3,6 +3,7 @@ A CLI Tool to perform different development tasks more easily
 
 # Usage
 
+```
 wgcli [action] [options]
 
 ACTIONS
@@ -18,4 +19,4 @@ OPTIONS
 -s --snapshot          build the snapshot version (default)
 -v --version           Version information
 -h --help              Print help
-
+```
