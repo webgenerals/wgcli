@@ -29,7 +29,7 @@ def getUsage() {
 }
 
 def parseCliOptions(args) {
-	def cli = new CliBuilder(usage: getUsage())
+	def cli = new CliBuilder(usage: getUsage(), stopAtNonOption: false)
 
 	cli.with {
 		r longOpt: 'release', 'Build release version'
@@ -103,12 +103,11 @@ def translateSnapshotOrReleaseArguments(buildTool, options) {
 }
 
 def runWGCli(args) {
-	
 	def options = parseCliOptions(args)
-
-	if (args.length == 1 && (options.v || options.version)) {
+		
+	if (options.v || options.version) {
 		printVersion()
-	} else if (args.length == 1 && (options.h || options.help)) {
+	} else if (options.h || options.help) {
 		printUsage()
 	} else {
 		def action = args[0]
